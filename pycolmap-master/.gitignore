@@ -1,0 +1,6 @@
+.vscode
+*.so
+*.egg-info/
+build/
+.cache/
+example/
