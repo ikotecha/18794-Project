@@ -1,198 +1,199 @@
 import argparse
-import collections.abc as collections
+import collections.abc as colls
 import glob
 import pprint
 from pathlib import Path
-from types import SimpleNamespace
-from typing import Dict, List, Optional, Union
-
 import cv2
 import h5py
 import numpy as np
 import PIL.Image
 import torch
 from tqdm import tqdm
+from types import SimpleNamespace
+from typing import Dict, List, Optional, Union
 
 from . import extractors, logger
 from .utils.base_model import dynamic_load
 from .utils.io import list_h5_names, read_image
 from .utils.parsers import parse_image_lists
 
+# configs for different models
+configs = {
+    "superpoint": {
+        "out_dir": "superpoint-feats-n4096-r1024",
+        "model_stuff": {
+            "name": "superpoint",
+            "nms_radius": 3,
+            "max_kp": 4096,
+        },
+        "preprocess": {
+            "gray": True,
+            "max_size": 1024,
+        },
+    },
+    "netvlad": {
+        "out_dir": "netvlad-global-feats",
+        "model_stuff": {"name": "netvlad"},
+        "preprocess": {"max_size": 1024},
+    }
+}
 
-def resize_image(image, size, interp):
-    if interp.startswith("cv2_"):
-        interp = getattr(cv2, "INTER_" + interp[len("cv2_") :].upper())
-        h, w = image.shape[:2]
-        if interp == cv2.INTER_AREA and (w < size[0] or h < size[1]):
-            interp = cv2.INTER_LINEAR
-        resized = cv2.resize(image, size, interpolation=interp)
-    elif interp.startswith("pil_"):
-        interp = getattr(PIL.Image, interp[len("pil_") :].upper())
-        resized = PIL.Image.fromarray(image.astype(np.uint8))
-        resized = resized.resize(size, resample=interp)
-        resized = np.asarray(resized, dtype=image.dtype)
+def resize_img(img, size, method):
+    if method.startswith('cv2_'):
+        m = getattr(cv2, 'INTER_' + method[4:].upper())
+        h, w = img.shape[:2]
+        if m == cv2.INTER_AREA and (w < size[0] or h < size[1]):
+            m = cv2.INTER_LINEAR
+        new_img = cv2.resize(img, size, interpolation=m)
+    elif method.startswith('pil_'):
+        m = getattr(PIL.Image, method[4:].upper())
+        new_img = PIL.Image.fromarray(img.astype(np.uint8))
+        new_img = new_img.resize(size, resample=m)
+        new_img = np.asarray(new_img, dtype=img.dtype)
     else:
-        raise ValueError(f"Unknown interpolation {interp}.")
-    return resized
+        raise ValueError(f"Bad resize method: {method}")
+    return new_img
 
-
-class ImageDataset(torch.utils.data.Dataset):
-    default_conf = {
-        "globs": ["*.jpg", "*.png", "*.jpeg", "*.JPG", "*.PNG"],
-        "grayscale": False,
-        "resize_max": None,
-        "resize_force": False,
-        "interpolation": "cv2_area",  # pil_linear is more accurate but slower
+class ImgDataset(torch.utils.data.Dataset):
+    defaults = {
+        "patterns": ["*.jpg", "*.png", "*.jpeg", "*.JPG", "*.PNG"],
+        "gray": False,
+        "max_size": None,
+        "force_resize": False,
+        "resize_method": "cv2_area",
     }
 
-    def __init__(self, root, conf, paths=None):
-        self.conf = conf = SimpleNamespace(**{**self.default_conf, **conf})
+    def __init__(self, root, cfg, img_list=None):
+        self.cfg = SimpleNamespace(**{**self.defaults, **cfg})
         self.root = root
 
-        if paths is None:
+        if not img_list:
             paths = []
-            for g in conf.globs:
-                paths += glob.glob((Path(root) / "**" / g).as_posix(), recursive=True)
-            if len(paths) == 0:
-                raise ValueError(f"Could not find any image in root: {root}.")
+            for pat in self.cfg.patterns:
+                paths += glob.glob((Path(root)/"**"/pat).as_posix(), recursive=True)
+            if not paths:
+                raise ValueError(f"No images found in {root}")
             paths = sorted(set(paths))
-            self.names = [Path(p).relative_to(root).as_posix() for p in paths]
-            logger.info(f"Found {len(self.names)} images in root {root}.")
+            self.imgs = [Path(p).relative_to(root).as_posix() for p in paths]
+            logger.info(f"Found {len(self.imgs)} images in {root}")
         else:
-            if isinstance(paths, (Path, str)):
-                self.names = parse_image_lists(paths)
-            elif isinstance(paths, collections.Iterable):
-                self.names = [p.as_posix() if isinstance(p, Path) else p for p in paths]
+            if isinstance(img_list, (Path, str)):
+                self.imgs = parse_image_lists(img_list)
+            elif isinstance(img_list, colls.Iterable):
+                self.imgs = [p.as_posix() if isinstance(p, Path) else p for p in img_list]
             else:
-                raise ValueError(f"Unknown format for path argument {paths}.")
+                raise ValueError(f"Bad img_list format: {img_list}")
 
-            for name in self.names:
-                if not (root / name).exists():
-                    raise ValueError(f"Image {name} does not exists in root: {root}.")
+            for img in self.imgs:
+                if not (root/img).exists():
+                    raise ValueError(f"Image {img} not found in {root}")
 
     def __getitem__(self, idx):
-        name = self.names[idx]
-        image = read_image(self.root / name, self.conf.grayscale)
-        image = image.astype(np.float32)
-        size = image.shape[:2][::-1]
+        img = read_image(self.root/self.imgs[idx], self.cfg.gray)
+        img = img.astype(np.float32)
+        size = img.shape[:2][::-1]
 
-        if self.conf.resize_max and (
-            self.conf.resize_force or max(size) > self.conf.resize_max
-        ):
-            scale = self.conf.resize_max / max(size)
-            size_new = tuple(int(round(x * scale)) for x in size)
-            image = resize_image(image, size_new, self.conf.interpolation)
+        if self.cfg.max_size and (self.cfg.force_resize or max(size) > self.cfg.max_size):
+            scale = self.cfg.max_size / max(size)
+            new_size = tuple(int(round(x*scale)) for x in size)
+            img = resize_img(img, new_size, self.cfg.resize_method)
 
-        if self.conf.grayscale:
-            image = image[None]
+        if self.cfg.gray:
+            img = img[None]
         else:
-            image = image.transpose((2, 0, 1))  # HxWxC to CxHxW
-        image = image / 255.0
+            img = img.transpose((2,0,1))
+        img = img/255.0
 
-        data = {
-            "image": image,
-            "original_size": np.array(size),
+        return {
+            "img": img,
+            "orig_size": np.array(size),
         }
-        return data
 
     def __len__(self):
-        return len(self.names)
-
+        return len(self.imgs)
 
 @torch.no_grad()
-def main(
-    conf: Dict,
-    image_dir: Path,
-    export_dir: Optional[Path] = None,
-    as_half: bool = True,
-    image_list: Optional[Union[Path, List[str]]] = None,
-    feature_path: Optional[Path] = None,
+def extract_features(
+    cfg: Dict,
+    img_dir: Path,
+    out_dir: Optional[Path] = None,
+    half_precision: bool = True,
+    img_list: Optional[Union[Path, List[str]]] = None,
+    feat_path: Optional[Path] = None,
     overwrite: bool = False,
 ) -> Path:
-    logger.info(
-        "Extracting local features with configuration:" f"\n{pprint.pformat(conf)}"
-    )
+    logger.info(f"Extracting features with config:\n{pprint.pformat(cfg)}")
 
-    dataset = ImageDataset(image_dir, conf["preprocessing"], image_list)
-    if feature_path is None:
-        feature_path = Path(export_dir, conf["output"] + ".h5")
-    feature_path.parent.mkdir(exist_ok=True, parents=True)
-    skip_names = set(
-        list_h5_names(feature_path) if feature_path.exists() and not overwrite else ()
-    )
-    dataset.names = [n for n in dataset.names if n not in skip_names]
-    if len(dataset.names) == 0:
-        logger.info("Skipping the extraction.")
-        return feature_path
+    data = ImgDataset(img_dir, cfg["preprocess"], img_list)
+    if not feat_path:
+        feat_path = Path(out_dir, cfg["out_dir"] + ".h5")
+    feat_path.parent.mkdir(exist_ok=True, parents=True)
+
+    done_imgs = set(list_h5_names(feat_path) if feat_path.exists() and not overwrite else ())
+    data.imgs = [n for n in data.imgs if n not in done_imgs]
+    if not data.imgs:
+        logger.info("Nothing to do")
+        return feat_path
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    Model = dynamic_load(extractors, conf["model"]["name"])
-    model = Model(conf["model"]).eval().to(device)
+    Model = dynamic_load(extractors, cfg["model_stuff"]["name"])
+    model = Model(cfg["model_stuff"]).eval().to(device)
 
-    loader = torch.utils.data.DataLoader(
-        dataset, num_workers=1, shuffle=False, pin_memory=True
-    )
-    for idx, data in enumerate(tqdm(loader)):
-        name = dataset.names[idx]
-        pred = model({"image": data["image"].to(device, non_blocking=True)})
-        pred = {k: v[0].cpu().numpy() for k, v in pred.items()}
+    loader = torch.utils.data.DataLoader(data, num_workers=1, shuffle=False, pin_memory=True)
 
-        pred["image_size"] = original_size = data["original_size"][0].numpy()
-        if "keypoints" in pred:
-            size = np.array(data["image"].shape[-2:][::-1])
-            scales = (original_size / size).astype(np.float32)
-            pred["keypoints"] = (pred["keypoints"] + 0.5) * scales[None] - 0.5
-            if "scales" in pred:
-                pred["scales"] *= scales.mean()
-            # add keypoint uncertainties scaled to the original resolution
-            uncertainty = getattr(model, "detection_noise", 1) * scales.mean()
+    for idx, batch in enumerate(tqdm(loader)):
+        name = data.imgs[idx]
+        out = model({"image": batch["img"].to(device, non_blocking=True)})
+        out = {k: v[0].cpu().numpy() for k, v in out.items()}
 
-        if as_half:
-            for k in pred:
-                dt = pred[k].dtype
-                if (dt == np.float32) and (dt != np.float16):
-                    pred[k] = pred[k].astype(np.float16)
+        out["image_size"] = orig_size = batch["orig_size"][0].numpy()
+        if "keypoints" in out:
+            size = np.array(batch["img"].shape[-2:][::-1])
+            scales = (orig_size/size).astype(np.float32)
+            out["keypoints"] = (out["keypoints"] + 0.5) * scales[None] - 0.5
+            if "scales" in out:
+                out["scales"] *= scales.mean()
+            uncert = getattr(model, "detection_noise", 1) * scales.mean()
 
-        with h5py.File(str(feature_path), "a", libver="latest") as fd:
+        if half_precision:
+            for k in out:
+                if out[k].dtype == np.float32:
+                    out[k] = out[k].astype(np.float16)
+
+        with h5py.File(str(feat_path), "a", libver="latest") as f:
             try:
-                if name in fd:
-                    del fd[name]
-                grp = fd.create_group(name)
-                for k, v in pred.items():
-                    grp.create_dataset(k, data=v)
-                if "keypoints" in pred:
-                    grp["keypoints"].attrs["uncertainty"] = uncertainty
-            except OSError as error:
-                if "No space left on device" in error.args[0]:
-                    logger.error(
-                        "Out of disk space: storing features on disk can take "
-                        "significant space, did you enable the as_half flag?"
-                    )
-                    del grp, fd[name]
-                raise error
+                if name in f:
+                    del f[name]
+                g = f.create_group(name)
+                for k, v in out.items():
+                    g.create_dataset(k, data=v)
+                if "keypoints" in out:
+                    g["keypoints"].attrs["uncertainty"] = uncert
+            except OSError as e:
+                if "No space left on device" in e.args[0]:
+                    logger.error("Disk full! Try using half precision")
+                    del g, f[name]
+                raise e
 
-        del pred
+        del out
 
-    logger.info("Finished exporting features.")
-    return feature_path
-
+    logger.info("Done!")
+    return feat_path
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--image_dir", type=Path, required=True)
-    parser.add_argument("--export_dir", type=Path, required=True)
-    parser.add_argument(
-        "--conf", type=str, default="superpoint_aachen", choices=list(confs.keys())
-    )
-    parser.add_argument("--as_half", action="store_true")
-    parser.add_argument("--image_list", type=Path)
-    parser.add_argument("--feature_path", type=Path)
+    parser.add_argument("--img_dir", type=Path, required=True)
+    parser.add_argument("--out_dir", type=Path, required=True)
+    parser.add_argument("--cfg", type=str, default="superpoint", choices=list(configs.keys()))
+    parser.add_argument("--half", action="store_true")
+    parser.add_argument("--img_list", type=Path)
+    parser.add_argument("--feat_path", type=Path)
     args = parser.parse_args()
-    main(
-        confs[args.conf],
-        args.image_dir,
-        args.export_dir,
-        args.as_half,
-        args.image_list,
-        args.feature_path,
+    extract_features(
+        configs[args.cfg],
+        args.img_dir,
+        args.out_dir,
+        args.half,
+        args.img_list,
+        args.feat_path,
     )
