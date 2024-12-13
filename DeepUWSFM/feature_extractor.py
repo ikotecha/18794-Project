@@ -32,11 +32,14 @@ configs = {
             "max_size": 1024,
         },
     },
-    "netvlad": {
-        "out_dir": "netvlad-global-feats",
-        "model_stuff": {"name": "netvlad"},
-        "preprocess": {"max_size": 1024},
-    }
+    "sift": {
+        "output": "feats-sift",
+        "model": {"name": "dog"},
+        "preprocessing": {
+            "grayscale": True,
+            "resize_max": 1600,
+        },
+    },
 }
 
 def resize_img(img, size, method):
