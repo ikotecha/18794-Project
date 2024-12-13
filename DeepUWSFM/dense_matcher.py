@@ -14,7 +14,7 @@ from scipy.spatial import KDTree
 from tqdm import tqdm
 
 from . import matchers
-from .feature_extractor import resize_img
+from .image_dataset import resize_img
 from .utils.base_model import dynamic_load
 from .utils.io import list_h5_names, read_image
 from .utils.parsers import names_to_pair, parse_retrieval

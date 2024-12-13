@@ -26,20 +26,20 @@ def main(
     else:
         raise ValueError("Need either images or features!")
 
-    # Get reference image names
-    match_self = False
-    if ref_imgs:
-        if isinstance(ref_imgs, (str, Path)):
-            ref_names = parse_image_lists(ref_imgs)
-        elif isinstance(imgs, colls.Iterable):
-            ref_names = list(ref_imgs)
-        else:
-            raise ValueError(f"Bad ref image list type: {ref_imgs}")
-    elif ref_feats:
-        ref_names = list_h5_names(ref_feats)
-    else:
-        match_self = True
-        ref_names = q_names
+    # # Get reference image names
+    # match_self = False
+    # if ref_imgs:
+    #     if isinstance(ref_imgs, (str, Path)):
+    #         ref_names = parse_image_lists(ref_imgs)
+    #     elif isinstance(imgs, colls.Iterable):
+    #         ref_names = list(ref_imgs)
+    #     else:
+    #         raise ValueError(f"Bad ref image list type: {ref_imgs}")
+    # elif ref_feats:
+    #     ref_names = list_h5_names(ref_feats)
+    # else:
+    match_self = True
+    ref_names = q_names
 
     # Make all pairs
     pairs = []
