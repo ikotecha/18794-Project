@@ -143,7 +143,7 @@ def extract_features(
 #                 raise ValueError(f"No images found in {root}")
 #             paths = sorted(set(paths))
 #             self.imgs = [Path(p).relative_to(root).as_posix() for p in paths]
-#             # logger.info(f"Found {len(self.imgs)} images in {root}")
+#             # print(f"Found {len(self.imgs)} images in {root}")
 #         else:
 #             if isinstance(img_list, (Path, str)):
 #                 self.imgs = parse_image_lists(img_list)

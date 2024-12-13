@@ -195,7 +195,7 @@ class ImagePairDataset(torch.utils.data.Dataset):
         self.pairs = pairs
         if self.conf.cache_images:
             image_names = set(sum(pairs, ()))  # unique image names in pairs
-            # logger.info(f"Loading and caching {len(image_names)} unique images.")
+            # print(f"Loading and caching {len(image_names)} unique images.")
             self.images = {}
             self.scales = {}
             for name in tqdm(image_names):
@@ -265,7 +265,7 @@ def match_dense(
         dataset, num_workers=16, batch_size=1, shuffle=False
     )
 
-    # logger.info("Performing dense matching...")
+    # print("Performing dense matching...")
     with h5py.File(str(match_path), "a") as fd:
         for data in tqdm(loader, smoothing=0.1):
             # load image-pair data
@@ -320,7 +320,7 @@ def load_keypoints(
     if quantize is None:
         quantize = existing_refs  # quantize all
     # if len(existing_refs) > 0:
-        # logger.info(f"Loading keypoints from {len(existing_refs)} images.")
+        # print(f"Loading keypoints from {len(existing_refs)} images.")
 
     # Load query keypoints
     cpdict = defaultdict(list)
@@ -375,7 +375,7 @@ def aggregate_matches(
     pairs = [p for _, p in sorted(zip(pairs_score, pairs))]
 
     # if len(required_queries) > 0:
-    #     logger.info(f"Aggregating keypoints for {len(required_queries)} images.")
+    #     print(f"Aggregating keypoints for {len(required_queries)} images.")
     n_kps = 0
     with h5py.File(str(match_path), "a") as fd:
         for name0, name1 in tqdm(pairs, smoothing=0.1):
@@ -452,7 +452,7 @@ def aggregate_matches(
 
     if len(required_queries) > 0:
         avg_kp_per_image = round(n_kps / len(required_queries), 1)
-        # logger.info(
+        # print(
         #     f"Finished assignment, found {avg_kp_per_image} "
         #     f"keypoints/image (avg.), total {n_kps}."
         # )
@@ -523,13 +523,13 @@ def match_and_assign(
             required_queries = required_queries - existing_queries
 
     if len(pairs) == 0 and len(required_queries) == 0:
-        # logger.info("All pairs exist. Skipping dense matching.")
+        # print("All pairs exist. Skipping dense matching.")
         return
 
     # extract semi-dense matches
     match_dense(conf, pairs, image_dir, match_path, existing_refs=existing_refs)
 
-    # logger.info("Assigning matches...")
+    # print("Assigning matches...")
 
     # Pre-load existing keypoints
     cpdict, bindict = load_keypoints(
@@ -550,7 +550,7 @@ def match_and_assign(
 
     # Invalidate matches that are far from selected bin by reassignment
     if max_kps is not None:
-        # logger.info(f'Reassign matches with max_error={conf["max_error"]}.')
+        # print(f'Reassign matches with max_error={conf["max_error"]}.')
         assign_matches(pairs, match_path, cpdict, max_error=conf["max_error"])
 
 
@@ -566,7 +566,7 @@ def main(
     max_kps: Optional[int] = 8192,
     overwrite: bool = False,
 ) -> Path:
-    # logger.info(
+    # print(
     #     "Extracting semi-dense features with configuration:" f"\n{pprint.pformat(conf)}"
     # )
 

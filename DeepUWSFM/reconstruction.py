@@ -19,9 +19,9 @@ from .utils.database import COLMAPDatabase
 
 def create_empty_db(database_path: Path):
     if database_path.exists():
-        logger.warning("The database already exists, deleting it.")
+        # logger.warning("The database already exists, deleting it.")
         database_path.unlink()
-    logger.info("Creating an empty database...")
+    # logger.info("Creating an empty database...")
     db = COLMAPDatabase.connect(database_path)
     db.create_tables()
     db.commit()
@@ -35,7 +35,7 @@ def import_images(
     image_list: Optional[List[str]] = None,
     options: Optional[Dict[str, Any]] = None,
 ):
-    logger.info("Importing images into the database...")
+    # logger.info("Importing images into the database...")
     if options is None:
         options = {}
     images = list(image_dir.iterdir())
@@ -69,7 +69,7 @@ def run_reconstruction(
 ) -> pycolmap.Reconstruction:
     models_path = sfm_dir / "models"
     models_path.mkdir(exist_ok=True, parents=True)
-    logger.info("Running 3D reconstruction...")
+    # logger.info("Running 3D reconstruction...")
     if options is None:
         options = {}
     options = {"num_threads": min(multiprocessing.cpu_count(), 16), **options}
@@ -80,9 +80,9 @@ def run_reconstruction(
             )
 
     if len(reconstructions) == 0:
-        logger.error("Could not reconstruct any model!")
+        # logger.error("Could not reconstruct any model!")
         return None
-    logger.info(f"Reconstructed {len(reconstructions)} model(s).")
+    # logger.info(f"Reconstructed {len(reconstructions)} model(s).")
 
     largest_index = None
     largest_num_images = 0
@@ -92,9 +92,9 @@ def run_reconstruction(
             largest_index = index
             largest_num_images = num_images
     assert largest_index is not None
-    logger.info(
-        f"Largest model is #{largest_index} " f"with {largest_num_images} images."
-    )
+    # logger.info(
+    #     f"Largest model is #{largest_index} " f"with {largest_num_images} images."
+    # )
 
     for filename in ["images.bin", "cameras.bin", "points3D.bin"]:
         if (sfm_dir / filename).exists():
@@ -141,11 +141,11 @@ def main(
     reconstruction = run_reconstruction(
         sfm_dir, database, image_dir, verbose, mapper_options
     )
-    if reconstruction is not None:
-        logger.info(
-            f"Reconstruction statistics:\n{reconstruction.summary()}"
-            + f"\n\tnum_input_images = {len(image_ids)}"
-        )
+    # if reconstruction is not None:
+        # logger.info(
+        #     f"Reconstruction statistics:\n{reconstruction.summary()}"
+        #     + f"\n\tnum_input_images = {len(image_ids)}"
+        # )
     return reconstruction
 
 

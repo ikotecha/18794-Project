@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pycolmap
 
-logger = logging.getLogger(__name__)
+# logger = logging.get# logger(__name__)
 
 
 def parse_image_list(path, with_intrinsics=False):
@@ -27,7 +27,7 @@ def parse_image_list(path, with_intrinsics=False):
                 images.append(name)
 
     assert len(images) > 0
-    logger.info(f"Imported {len(images)} images from {path.name}")
+    print(f"Imported {len(images)} images from {path.name}")
     return images
 
 

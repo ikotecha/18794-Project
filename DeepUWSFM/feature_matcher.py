@@ -213,7 +213,7 @@ def match_from_paths(
     match_path: Path,
     feature_path_q: Path,
 ) -> Path:
-    # logger.info(
+    # print(
     #     "Matching local features with configuration:" f"\n{pprint.pformat(conf)}"
     # )
 
@@ -226,7 +226,7 @@ def match_from_paths(
     pairs = [(q, r) for q, rs in pairs.items() for r in rs]
     pairs = find_unique_new_pairs(pairs, match_path)
     if len(pairs) == 0:
-        # logger.info("Skipping the matching.")
+        # print("Skipping the matching.")
         return
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -248,7 +248,7 @@ def match_from_paths(
         pair = names_to_pair(*pairs[idx])
         writer_queue.put((pair, pred))
     writer_queue.join()
-    # logger.info("Finished exporting matches.")
+    # print("Finished exporting matches.")
 
 
 if __name__ == "__main__":

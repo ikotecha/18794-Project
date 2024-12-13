@@ -27,8 +27,8 @@ class OutputCapture:
     def __exit__(self, exc_type, *args):
         if not self.verbose:
             self.capture.__exit__(exc_type, *args)
-            if exc_type is not None:
-                logger.error("Failed with output:\n%s", self.out.getvalue())
+            # if exc_type is not None:
+                # logger.error("Failed with output:\n%s", self.out.getvalue())
         sys.stdout.flush()
 
 
@@ -36,7 +36,7 @@ def create_db_from_model(
     reconstruction: pycolmap.Reconstruction, database_path: Path
 ) -> Dict[str, int]:
     if database_path.exists():
-        logger.warning("The database already exists, deleting it.")
+        # logger.warning("The database already exists, deleting it.")
         database_path.unlink()
 
     db = COLMAPDatabase.connect(database_path)
@@ -63,7 +63,7 @@ def create_db_from_model(
 def import_features(
     image_ids: Dict[str, int], database_path: Path, features_path: Path
 ):
-    logger.info("Importing features into the database...")
+    # logger.info("Importing features into the database...")
     db = COLMAPDatabase.connect(database_path)
 
     for image_name, image_id in tqdm(image_ids.items()):
@@ -83,7 +83,7 @@ def import_matches(
     min_match_score: Optional[float] = None,
     skip_geometric_verification: bool = False,
 ):
-    logger.info("Importing matches into the database...")
+    # logger.info(" Importing matches into the database...")
 
     with open(str(pairs_path), "r") as f:
         pairs = [p.split() for p in f.readlines()]
@@ -111,7 +111,7 @@ def import_matches(
 def estimation_and_geometric_verification(
     database_path: Path, pairs_path: Path, verbose: bool = False
 ):
-    logger.info("Performing geometric verification of the matches...")
+    # logger.info("Performing geometric verification of the matches...")
     with OutputCapture(verbose):
         with pycolmap.ostream():
             pycolmap.verify_matches(
@@ -130,7 +130,7 @@ def geometric_verification(
     matches_path: Path,
     max_error: float = 4.0,
 ):
-    logger.info("Performing geometric verification of the matches...")
+    # logger.info("Performing geometric verification of the matches...")
 
     pairs = parse_retrieval(pairs_path)
     db = COLMAPDatabase.connect(database_path)
@@ -181,13 +181,13 @@ def geometric_verification(
             # to reverse the transformations if id0 > id1 in utils/database.py.
             db.add_two_view_geometry(id0, id1, matches[valid_matches, :])
             inlier_ratios.append(np.mean(valid_matches))
-    logger.info(
-        "mean/med/min/max valid matches %.2f/%.2f/%.2f/%.2f%%.",
-        np.mean(inlier_ratios) * 100,
-        np.median(inlier_ratios) * 100,
-        np.min(inlier_ratios) * 100,
-        np.max(inlier_ratios) * 100,
-    )
+    # logger.info(
+    #     "mean/med/min/max valid matches %.2f/%.2f/%.2f/%.2f%%.",
+    #     np.mean(inlier_ratios) * 100,
+    #     np.median(inlier_ratios) * 100,
+    #     np.min(inlier_ratios) * 100,
+    #     np.max(inlier_ratios) * 100,
+    # )
 
     db.commit()
     db.close()
@@ -202,7 +202,7 @@ def run_triangulation(
     options: Optional[Dict[str, Any]] = None,
 ) -> pycolmap.Reconstruction:
     model_path.mkdir(parents=True, exist_ok=True)
-    logger.info("Running 3D triangulation...")
+    # logger.info("Running 3D triangulation...")
     if options is None:
         options = {}
     with OutputCapture(verbose):
@@ -255,9 +255,9 @@ def main(
     reconstruction = run_triangulation(
         sfm_dir, database, image_dir, reference, verbose, mapper_options
     )
-    logger.info(
-        "Finished the triangulation with statistics:\n%s", reconstruction.summary()
-    )
+    # logger.info(
+    #     "Finished the triangulation with statistics:\n%s", reconstruction.summary()
+    # )
     return reconstruction
 
 
