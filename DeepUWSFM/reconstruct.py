@@ -7,12 +7,10 @@ from typing import Any, Dict, List, Optional
 
 import pycolmap
 
-from .triangulation import (
-    OutputCapture,
-    estimation_and_geometric_verification,
+from .pycolmap_db import (
+    # OutputCapture,
     import_features,
     import_matches,
-    parse_option_args,
 )
 from .utils.database import COLMAPDatabase
 
@@ -73,11 +71,11 @@ def run_reconstruction(
     if options is None:
         options = {}
     options = {"num_threads": min(multiprocessing.cpu_count(), 16), **options}
-    with OutputCapture(verbose):
-        with pycolmap.ostream():
-            reconstructions = pycolmap.incremental_mapping(
-                database_path, image_dir, models_path, options=options
-            )
+    # with OutputCapture(verbose):
+    with pycolmap.ostream():
+        reconstructions = pycolmap.incremental_mapping(
+            database_path, image_dir, models_path, options=options
+        )
 
     if len(reconstructions) == 0:
         # logger.error("Could not reconstruct any model!")
@@ -111,7 +109,6 @@ def main(
     matches: Path,
     camera_mode: pycolmap.CameraMode = pycolmap.CameraMode.AUTO,
     verbose: bool = False,
-    skip_geometric_verification: bool = False,
     min_match_score: Optional[float] = None,
     image_list: Optional[List[str]] = None,
     image_options: Optional[Dict[str, Any]] = None,
@@ -134,10 +131,7 @@ def main(
         pairs,
         matches,
         min_match_score,
-        skip_geometric_verification,
     )
-    if not skip_geometric_verification:
-        estimation_and_geometric_verification(database, pairs, verbose)
     reconstruction = run_reconstruction(
         sfm_dir, database, image_dir, verbose, mapper_options
     )
@@ -147,48 +141,3 @@ def main(
         #     + f"\n\tnum_input_images = {len(image_ids)}"
         # )
     return reconstruction
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--sfm_dir", type=Path, required=True)
-    parser.add_argument("--image_dir", type=Path, required=True)
-
-    parser.add_argument("--pairs", type=Path, required=True)
-    parser.add_argument("--features", type=Path, required=True)
-    parser.add_argument("--matches", type=Path, required=True)
-
-    parser.add_argument(
-        "--camera_mode",
-        type=str,
-        default="AUTO",
-        choices=list(pycolmap.CameraMode.__members__.keys()),
-    )
-    parser.add_argument("--skip_geometric_verification", action="store_true")
-    parser.add_argument("--min_match_score", type=float)
-    parser.add_argument("--verbose", action="store_true")
-
-    parser.add_argument(
-        "--image_options",
-        nargs="+",
-        default=[],
-        help="List of key=value from {}".format(pycolmap.ImageReaderOptions().todict()),
-    )
-    parser.add_argument(
-        "--mapper_options",
-        nargs="+",
-        default=[],
-        help="List of key=value from {}".format(
-            pycolmap.IncrementalMapperOptions().todict()
-        ),
-    )
-    args = parser.parse_args().__dict__
-
-    image_options = parse_option_args(
-        args.pop("image_options"), pycolmap.ImageReaderOptions()
-    )
-    mapper_options = parse_option_args(
-        args.pop("mapper_options"), pycolmap.IncrementalMapperOptions()
-    )
-
-    main(**args, image_options=image_options, mapper_options=mapper_options)
