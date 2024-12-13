@@ -18,48 +18,8 @@ from .image_dataset import resize_img
 from .utils.base_model import dynamic_load
 from .utils.io import list_h5_names, read_image
 from .utils.parsers import names_to_pair, parse_retrieval
+from .config import configs
 
-# Default usage:
-# dense_conf = confs['loftr']
-# features, matches = main(dense_conf, pairs, images, export_dir=outputs)
-
-# Use SuperPoint keypoints as anchors:
-# feature_conf = extract_features.confs['superpoint_aachen']
-# features_sp = extract_features.main(feature_conf, images)
-# features, matches = main(dense_conf, pairs, images,
-#                           export_dir=outputs,
-#                          features_ref=features_sp)
-
-# Localization:
-# loc_features, loc_matches = main(matcher_conf, loc_pairs,
-#      images, export_dir=outputs, features_ref=features, max_kps=None)
-
-confs = {
-    # Best quality but loads of points. Only use for small scenes
-    "loftr": {
-        "output": "matches-loftr",
-        "model": {"name": "loftr", "weights": "outdoor"},
-        "preprocessing": {"grayscale": True, "resize_max": 1024, "dfactor": 8},
-        "max_error": 1,  # max error for assigned keypoints (in px)
-        "cell_size": 1,  # size of quantization patch (max 1 kp/patch)
-    },
-    # Semi-scalable loftr which limits detected keypoints
-    "loftr_aachen": {
-        "output": "matches-loftr_aachen",
-        "model": {"name": "loftr", "weights": "outdoor"},
-        "preprocessing": {"grayscale": True, "resize_max": 1024, "dfactor": 8},
-        "max_error": 2,  # max error for assigned keypoints (in px)
-        "cell_size": 8,  # size of quantization patch (max 1 kp/patch)
-    },
-    # Use for matching superpoint feats with loftr
-    "loftr_superpoint": {
-        "output": "matches-loftr_aachen",
-        "model": {"name": "loftr", "weights": "outdoor"},
-        "preprocessing": {"grayscale": True, "resize_max": 1024, "dfactor": 8},
-        "max_error": 4,  # max error for assigned keypoints (in px)
-        "cell_size": 4,  # size of quantization patch (max 1 kp/patch)
-    },
-}
 
 def find_unique_new_pairs(pairs_all: List[Tuple[str]], match_path: Path = None):
     """Avoid to recompute duplicates to save time."""
@@ -603,24 +563,3 @@ def main(
     )
 
     return features_q, matches
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--pairs", type=Path, required=True)
-    parser.add_argument("--image_dir", type=Path, required=True)
-    parser.add_argument("--export_dir", type=Path, required=True)
-    parser.add_argument("--matches", type=Path, default=confs["loftr"]["output"])
-    parser.add_argument(
-        "--features", type=str, default="feats_" + confs["loftr"]["output"]
-    )
-    parser.add_argument("--conf", type=str, default="loftr", choices=list(confs.keys()))
-    args = parser.parse_args()
-    main(
-        confs[args.conf],
-        args.pairs,
-        args.image_dir,
-        args.export_dir,
-        args.matches,
-        args.features,
-    )

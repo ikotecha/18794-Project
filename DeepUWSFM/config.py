@@ -20,4 +20,19 @@ configs = {
             "resize_max": 1600,
         },
     },
+    "loftr": {
+        "output": "matches-loftr",
+        "model": {"name": "loftr", "weights": "outdoor"},
+        "preprocessing": {"grayscale": True, "resize_max": 1024, "dfactor": 8},
+        "max_error": 1,  # max error for assigned keypoints (in px)
+        "cell_size": 1,  # size of quantization patch (max 1 kp/patch)
+    },
+    "superglue": {
+        "output": "matches-superglue",
+        "model": {
+            "name": "superglue",
+            "weights": "outdoor",
+            "sinkhorn_iterations": 50,
+        },
+    },
 }

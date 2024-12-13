@@ -13,79 +13,7 @@ from tqdm import tqdm
 from . import matchers
 from .utils.base_model import dynamic_load
 from .utils.parsers import names_to_pair, names_to_pair_old, parse_retrieval
-
-"""
-A set of standard configurations that can be directly selected from the command
-line using their name. Each is a dictionary with the following entries:
-    - output: the name of the match file that will be generated.
-    - model: the model configuration, as passed to a feature matcher.
-"""
-confs = {
-    "superpoint+lightglue": {
-        "output": "matches-superpoint-lightglue",
-        "model": {
-            "name": "lightglue",
-            "features": "superpoint",
-        },
-    },
-    "disk+lightglue": {
-        "output": "matches-disk-lightglue",
-        "model": {
-            "name": "lightglue",
-            "features": "disk",
-        },
-    },
-    "aliked+lightglue": {
-        "output": "matches-aliked-lightglue",
-        "model": {
-            "name": "lightglue",
-            "features": "aliked",
-        },
-    },
-    "superglue": {
-        "output": "matches-superglue",
-        "model": {
-            "name": "superglue",
-            "weights": "outdoor",
-            "sinkhorn_iterations": 50,
-        },
-    },
-    "superglue-fast": {
-        "output": "matches-superglue-it5",
-        "model": {
-            "name": "superglue",
-            "weights": "outdoor",
-            "sinkhorn_iterations": 5,
-        },
-    },
-    "NN-superpoint": {
-        "output": "matches-NN-mutual-dist.7",
-        "model": {
-            "name": "nearest_neighbor",
-            "do_mutual_check": True,
-            "distance_threshold": 0.7,
-        },
-    },
-    "NN-ratio": {
-        "output": "matches-NN-mutual-ratio.8",
-        "model": {
-            "name": "nearest_neighbor",
-            "do_mutual_check": True,
-            "ratio_threshold": 0.8,
-        },
-    },
-    "NN-mutual": {
-        "output": "matches-NN-mutual",
-        "model": {
-            "name": "nearest_neighbor",
-            "do_mutual_check": True,
-        },
-    },
-    "adalam": {
-        "output": "matches-adalam",
-        "model": {"name": "adalam"},
-    },
-}
+from .config import configs
 
 
 class WorkQueue:
@@ -150,38 +78,6 @@ def writer_fn(inp, match_path):
         if "matching_scores0" in pred:
             scores = pred["matching_scores0"][0].cpu().half().numpy()
             grp.create_dataset("matching_scores0", data=scores)
-
-
-# def main(
-#     conf: Dict,
-#     pairs: Path,
-#     features: Union[Path, str],
-#     export_dir: Optional[Path] = None,
-#     matches: Optional[Path] = None,
-#     features_ref: Optional[Path] = None,
-#     overwrite: bool = False,
-# ) -> Path:
-#     if isinstance(features, Path) or Path(features).exists():
-#         features_q = features
-#         if matches is None:
-#             raise ValueError(
-#                 "Either provide both features and matches as Path" " or both as names."
-#             )
-#     else:
-#         if export_dir is None:
-#             raise ValueError(
-#                 "Provide an export_dir if features is not" f" a file path: {features}."
-#             )
-#         features_q = Path(export_dir, features + ".h5")
-#         if matches is None:
-#             matches = Path(export_dir, f'{features}_{conf["output"]}_{pairs.stem}.h5')
-
-#     if features_ref is None:
-#         features_ref = features_q
-#     match_from_paths(conf, pairs, matches, features_q, features_ref, overwrite)
-
-#     return matches
-
 
 def find_unique_new_pairs(pairs_all: List[Tuple[str]], match_path: Path = None):
     """Avoid to recompute duplicates to save time."""
@@ -249,16 +145,3 @@ def match_from_paths(
         writer_queue.put((pair, pred))
     writer_queue.join()
     # print("Finished exporting matches.")
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--pairs", type=Path, required=True)
-    parser.add_argument("--export_dir", type=Path)
-    parser.add_argument("--features", type=str, default="feats-superpoint-n4096-r1024")
-    parser.add_argument("--matches", type=Path)
-    parser.add_argument(
-        "--conf", type=str, default="superglue", choices=list(confs.keys())
-    )
-    args = parser.parse_args()
-    main(confs[args.conf], args.pairs, args.features, args.export_dir)
