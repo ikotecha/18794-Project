@@ -15,7 +15,6 @@ from tqdm import tqdm
 
 from . import matchers
 from .feature_extractor import resize_img
-from .match_features import find_unique_new_pairs
 from .utils.base_model import dynamic_load
 from .utils.io import list_h5_names, read_image
 from .utils.parsers import names_to_pair, parse_retrieval
@@ -196,7 +195,7 @@ class ImagePairDataset(torch.utils.data.Dataset):
         self.pairs = pairs
         if self.conf.cache_images:
             image_names = set(sum(pairs, ()))  # unique image names in pairs
-            logger.info(f"Loading and caching {len(image_names)} unique images.")
+            # logger.info(f"Loading and caching {len(image_names)} unique images.")
             self.images = {}
             self.scales = {}
             for name in tqdm(image_names):
@@ -212,7 +211,7 @@ class ImagePairDataset(torch.utils.data.Dataset):
             scale = self.conf.resize_max / max(size)
             if scale < 1.0:
                 size_new = tuple(int(round(x * scale)) for x in size)
-                image = resize_image(image, size_new, "cv2_area")
+                image = resize_img(image, size_new, "cv2_area")
                 scale = np.array(size) / np.array(size_new)
 
         if self.conf.grayscale:
@@ -266,7 +265,7 @@ def match_dense(
         dataset, num_workers=16, batch_size=1, shuffle=False
     )
 
-    logger.info("Performing dense matching...")
+    # logger.info("Performing dense matching...")
     with h5py.File(str(match_path), "a") as fd:
         for data in tqdm(loader, smoothing=0.1):
             # load image-pair data
@@ -320,8 +319,8 @@ def load_keypoints(
     existing_refs = set(name2ref.keys())
     if quantize is None:
         quantize = existing_refs  # quantize all
-    if len(existing_refs) > 0:
-        logger.info(f"Loading keypoints from {len(existing_refs)} images.")
+    # if len(existing_refs) > 0:
+        # logger.info(f"Loading keypoints from {len(existing_refs)} images.")
 
     # Load query keypoints
     cpdict = defaultdict(list)
@@ -375,8 +374,8 @@ def aggregate_matches(
     pairs_score = [min(pairs_per_q[i], pairs_per_q[j]) for i, j in pairs]
     pairs = [p for _, p in sorted(zip(pairs_score, pairs))]
 
-    if len(required_queries) > 0:
-        logger.info(f"Aggregating keypoints for {len(required_queries)} images.")
+    # if len(required_queries) > 0:
+    #     logger.info(f"Aggregating keypoints for {len(required_queries)} images.")
     n_kps = 0
     with h5py.File(str(match_path), "a") as fd:
         for name0, name1 in tqdm(pairs, smoothing=0.1):
@@ -453,10 +452,10 @@ def aggregate_matches(
 
     if len(required_queries) > 0:
         avg_kp_per_image = round(n_kps / len(required_queries), 1)
-        logger.info(
-            f"Finished assignment, found {avg_kp_per_image} "
-            f"keypoints/image (avg.), total {n_kps}."
-        )
+        # logger.info(
+        #     f"Finished assignment, found {avg_kp_per_image} "
+        #     f"keypoints/image (avg.), total {n_kps}."
+        # )
     return cpdict
 
 
@@ -524,13 +523,13 @@ def match_and_assign(
             required_queries = required_queries - existing_queries
 
     if len(pairs) == 0 and len(required_queries) == 0:
-        logger.info("All pairs exist. Skipping dense matching.")
+        # logger.info("All pairs exist. Skipping dense matching.")
         return
 
     # extract semi-dense matches
     match_dense(conf, pairs, image_dir, match_path, existing_refs=existing_refs)
 
-    logger.info("Assigning matches...")
+    # logger.info("Assigning matches...")
 
     # Pre-load existing keypoints
     cpdict, bindict = load_keypoints(
@@ -551,7 +550,7 @@ def match_and_assign(
 
     # Invalidate matches that are far from selected bin by reassignment
     if max_kps is not None:
-        logger.info(f'Reassign matches with max_error={conf["max_error"]}.')
+        # logger.info(f'Reassign matches with max_error={conf["max_error"]}.')
         assign_matches(pairs, match_path, cpdict, max_error=conf["max_error"])
 
 
@@ -567,9 +566,9 @@ def main(
     max_kps: Optional[int] = 8192,
     overwrite: bool = False,
 ) -> Path:
-    logger.info(
-        "Extracting semi-dense features with configuration:" f"\n{pprint.pformat(conf)}"
-    )
+    # logger.info(
+    #     "Extracting semi-dense features with configuration:" f"\n{pprint.pformat(conf)}"
+    # )
 
     if features is None:
         features = "feats_"
