@@ -14,6 +14,10 @@ from .utils.geometry import compute_epipolar_errors
 from .utils.io import get_keypoints, get_matches
 from .utils.parsers import parse_retrieval
 
+"""
+This file uses/adapts functionality from the hloc (Hierarchical-Localization) project
+Repository: https://github.com/cvg/Hierarchical-Localization
+"""
 
 def import_features(
     image_ids: Dict[str, int], database_path: Path, features_path: Path

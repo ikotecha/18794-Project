@@ -7,6 +7,10 @@ import numpy as np
 
 from .parsers import names_to_pair, names_to_pair_old
 
+"""
+This file uses/adapts functionality from the hloc (Hierarchical-Localization) project
+Repository: https://github.com/cvg/Hierarchical-Localization
+"""
 
 def read_image(path, grayscale=False):
     if grayscale:

@@ -1,4 +1,8 @@
 """
+This file uses/adapts functionality from the hloc (Hierarchical-Localization) project
+Repository: https://github.com/cvg/Hierarchical-Localization
+"""
+"""
 2D visualization primitives based on Matplotlib.
 
 1) Plot images with `plot_images`.

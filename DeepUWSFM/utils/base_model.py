@@ -5,6 +5,10 @@ from copy import copy
 
 from torch import nn
 
+"""
+This file uses/adapts functionality from the hloc (Hierarchical-Localization) project
+Repository: https://github.com/cvg/Hierarchical-Localization
+"""
 
 class BaseModel(nn.Module, metaclass=ABCMeta):
     default_conf = {}

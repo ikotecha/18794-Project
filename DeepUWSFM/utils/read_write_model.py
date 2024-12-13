@@ -1,3 +1,7 @@
+"""
+This file uses/adapts functionality from the hloc (Hierarchical-Localization) project
+Repository: https://github.com/cvg/Hierarchical-Localization
+"""
 # Copyright (c) 2018, ETH Zurich and UNC Chapel Hill.
 # All rights reserved.
 #

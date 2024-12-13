@@ -15,6 +15,10 @@ from .utils.base_model import dynamic_load
 from .utils.parsers import names_to_pair, names_to_pair_old, parse_retrieval
 from .config import configs
 
+"""
+This file uses/adapts functionality from the hloc (Hierarchical-Localization) project
+Repository: https://github.com/cvg/Hierarchical-Localization
+"""
 
 class WorkQueue:
     def __init__(self, work_fn, num_threads=1):

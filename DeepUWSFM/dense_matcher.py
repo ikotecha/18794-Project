@@ -20,6 +20,10 @@ from .utils.io import list_h5_names, read_image
 from .utils.parsers import names_to_pair, parse_retrieval
 from .config import configs
 
+"""
+This file uses/adapts functionality from the hloc (Hierarchical-Localization) project
+Repository: https://github.com/cvg/Hierarchical-Localization
+"""
 
 def find_unique_new_pairs(pairs_all: List[Tuple[str]], match_path: Path = None):
     """Avoid to recompute duplicates to save time."""

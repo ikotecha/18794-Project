@@ -8,6 +8,10 @@ from ..utils.base_model import BaseModel
 sys.path.append(str(Path(__file__).parent / "../third_party"))
 from SuperGluePretrainedNetwork.models import superpoint  # noqa E402
 
+"""
+This file uses/adapts functionality from the hloc (Hierarchical-Localization) project
+Repository: https://github.com/cvg/Hierarchical-Localization
+"""
 
 # The original keypoint sampling is incorrect. We patch it here but
 # we don't fix it upstream to not impact exisiting evaluations.

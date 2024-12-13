@@ -14,6 +14,11 @@ from typing import Dict, List, Optional, Union
 from .utils.io import read_image
 from .utils.parsers import parse_image_lists
 
+"""
+This file uses/adapts functionality from the hloc (Hierarchical-Localization) project
+Repository: https://github.com/cvg/Hierarchical-Localization
+"""
+
 def resize_img(img, size, method):
     if method.startswith('cv2_'):
         m = getattr(cv2, 'INTER_' + method[4:].upper())

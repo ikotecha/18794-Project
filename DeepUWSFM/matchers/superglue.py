@@ -6,6 +6,10 @@ from ..utils.base_model import BaseModel
 sys.path.append(str(Path(__file__).parent / "../third_party"))
 from SuperGluePretrainedNetwork.models.superglue import SuperGlue as SG  # noqa: E402
 
+"""
+This file uses/adapts functionality from the hloc (Hierarchical-Localization) project
+Repository: https://github.com/cvg/Hierarchical-Localization
+"""
 
 class SuperGlue(BaseModel):
     default_conf = {

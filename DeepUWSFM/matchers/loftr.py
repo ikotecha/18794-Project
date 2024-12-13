@@ -6,6 +6,10 @@ from kornia.feature.loftr.loftr import default_cfg
 
 from ..utils.base_model import BaseModel
 
+"""
+This file uses/adapts functionality from the hloc (Hierarchical-Localization) project
+Repository: https://github.com/cvg/Hierarchical-Localization
+"""
 
 class LoFTR(BaseModel):
     default_conf = {

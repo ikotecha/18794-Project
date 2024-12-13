@@ -6,6 +6,11 @@ import collections.abc as colls
 from .utils.io import list_h5_names
 from .utils.parsers import parse_image_lists
 
+"""
+This file uses/adapts functionality from the hloc (Hierarchical-Localization) project
+Repository: https://github.com/cvg/Hierarchical-Localization
+"""
+
 def main(
     out_file: Path,
     imgs: Optional[Union[Path, List[str]]] = None,

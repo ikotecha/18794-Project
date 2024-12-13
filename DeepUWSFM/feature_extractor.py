@@ -19,6 +19,11 @@ from .utils.parsers import parse_image_lists
 from .image_dataset import ImgDataset
 from .config import configs
 
+"""
+This file uses/adapts functionality from the hloc (Hierarchical-Localization) project
+Repository: https://github.com/cvg/Hierarchical-Localization
+"""
+
 @torch.no_grad()
 def extract_features(
     cfg: Dict,

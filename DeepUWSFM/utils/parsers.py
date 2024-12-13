@@ -5,8 +5,10 @@ from pathlib import Path
 import numpy as np
 import pycolmap
 
-# logger = logging.get# logger(__name__)
-
+"""
+This file uses/adapts functionality from the hloc (Hierarchical-Localization) project
+Repository: https://github.com/cvg/Hierarchical-Localization
+"""
 
 def parse_image_list(path, with_intrinsics=False):
     images = []

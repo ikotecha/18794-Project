@@ -13,6 +13,10 @@ from .pycolmap_db import (
 )
 from .utils.database import COLMAPDatabase
 
+"""
+This file uses/adapts functionality from the hloc (Hierarchical-Localization) project
+Repository: https://github.com/cvg/Hierarchical-Localization
+"""
 
 def create_empty_db(database_path: Path):
     if database_path.exists():

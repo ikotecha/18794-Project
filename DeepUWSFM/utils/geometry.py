@@ -1,6 +1,10 @@
 import numpy as np
 import pycolmap
 
+"""
+This file uses/adapts functionality from the hloc (Hierarchical-Localization) project
+Repository: https://github.com/cvg/Hierarchical-Localization
+"""
 
 def to_homogeneous(p):
     return np.pad(p, ((0, 0),) * (p.ndim - 1) + ((0, 1),), constant_values=1)
