@@ -152,35 +152,35 @@ def writer_fn(inp, match_path):
             grp.create_dataset("matching_scores0", data=scores)
 
 
-def main(
-    conf: Dict,
-    pairs: Path,
-    features: Union[Path, str],
-    export_dir: Optional[Path] = None,
-    matches: Optional[Path] = None,
-    features_ref: Optional[Path] = None,
-    overwrite: bool = False,
-) -> Path:
-    if isinstance(features, Path) or Path(features).exists():
-        features_q = features
-        if matches is None:
-            raise ValueError(
-                "Either provide both features and matches as Path" " or both as names."
-            )
-    else:
-        if export_dir is None:
-            raise ValueError(
-                "Provide an export_dir if features is not" f" a file path: {features}."
-            )
-        features_q = Path(export_dir, features + ".h5")
-        if matches is None:
-            matches = Path(export_dir, f'{features}_{conf["output"]}_{pairs.stem}.h5')
+# def main(
+#     conf: Dict,
+#     pairs: Path,
+#     features: Union[Path, str],
+#     export_dir: Optional[Path] = None,
+#     matches: Optional[Path] = None,
+#     features_ref: Optional[Path] = None,
+#     overwrite: bool = False,
+# ) -> Path:
+#     if isinstance(features, Path) or Path(features).exists():
+#         features_q = features
+#         if matches is None:
+#             raise ValueError(
+#                 "Either provide both features and matches as Path" " or both as names."
+#             )
+#     else:
+#         if export_dir is None:
+#             raise ValueError(
+#                 "Provide an export_dir if features is not" f" a file path: {features}."
+#             )
+#         features_q = Path(export_dir, features + ".h5")
+#         if matches is None:
+#             matches = Path(export_dir, f'{features}_{conf["output"]}_{pairs.stem}.h5')
 
-    if features_ref is None:
-        features_ref = features_q
-    match_from_paths(conf, pairs, matches, features_q, features_ref, overwrite)
+#     if features_ref is None:
+#         features_ref = features_q
+#     match_from_paths(conf, pairs, matches, features_q, features_ref, overwrite)
 
-    return matches
+#     return matches
 
 
 def find_unique_new_pairs(pairs_all: List[Tuple[str]], match_path: Path = None):
@@ -212,8 +212,6 @@ def match_from_paths(
     pairs_path: Path,
     match_path: Path,
     feature_path_q: Path,
-    feature_path_ref: Path,
-    overwrite: bool = False,
 ) -> Path:
     # logger.info(
     #     "Matching local features with configuration:" f"\n{pprint.pformat(conf)}"
@@ -221,14 +219,12 @@ def match_from_paths(
 
     if not feature_path_q.exists():
         raise FileNotFoundError(f"Query feature file {feature_path_q}.")
-    if not feature_path_ref.exists():
-        raise FileNotFoundError(f"Reference feature file {feature_path_ref}.")
     match_path.parent.mkdir(exist_ok=True, parents=True)
 
     assert pairs_path.exists(), pairs_path
     pairs = parse_retrieval(pairs_path)
     pairs = [(q, r) for q, rs in pairs.items() for r in rs]
-    pairs = find_unique_new_pairs(pairs, None if overwrite else match_path)
+    pairs = find_unique_new_pairs(pairs, match_path)
     if len(pairs) == 0:
         # logger.info("Skipping the matching.")
         return
@@ -237,7 +233,7 @@ def match_from_paths(
     Model = dynamic_load(matchers, conf["model"]["name"])
     model = Model(conf["model"]).eval().to(device)
 
-    dataset = FeaturePairsDataset(pairs, feature_path_q, feature_path_ref)
+    dataset = FeaturePairsDataset(pairs, feature_path_q, feature_path_q)
     loader = torch.utils.data.DataLoader(
         dataset, num_workers=5, batch_size=1, shuffle=False, pin_memory=True
     )
