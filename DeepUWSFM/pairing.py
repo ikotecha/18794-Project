@@ -1,64 +1,64 @@
 import argparse
-import collections.abc as collections
 from pathlib import Path
 from typing import List, Optional, Union
+import collections.abc as colls
 
-# from . import logger
 from .utils.io import list_h5_names
 from .utils.parsers import parse_image_lists
 
-
 def main(
-    output: Path,
-    image_list: Optional[Union[Path, List[str]]] = None,
-    features: Optional[Path] = None,
-    ref_list: Optional[Union[Path, List[str]]] = None,
-    ref_features: Optional[Path] = None,
+    out_file: Path,
+    imgs: Optional[Union[Path, List[str]]] = None,
+    # feats: Optional[Path] = None,
+    # ref_imgs: Optional[Union[Path, List[str]]] = None,
+    # ref_feats: Optional[Path] = None,
 ):
-    if image_list is not None:
-        if isinstance(image_list, (str, Path)):
-            names_q = parse_image_lists(image_list)
-        elif isinstance(image_list, collections.Iterable):
-            names_q = list(image_list)
+    # Get query image names
+    if imgs:
+        if isinstance(imgs, (str, Path)):
+            q_names = parse_image_lists(imgs)
+        elif isinstance(imgs, colls.Iterable):
+            q_names = list(imgs)
         else:
-            raise ValueError(f"Unknown type for image list: {image_list}")
-    elif features is not None:
-        names_q = list_h5_names(features)
+            raise ValueError(f"Bad image list type: {imgs}")
+    elif feats:
+        q_names = list_h5_names(feats)
     else:
-        raise ValueError("Provide either a list of images or a feature file.")
+        raise ValueError("Need either images or features!")
 
-    self_matching = False
-    if ref_list is not None:
-        if isinstance(ref_list, (str, Path)):
-            names_ref = parse_image_lists(ref_list)
-        elif isinstance(image_list, collections.Iterable):
-            names_ref = list(ref_list)
+    # Get reference image names
+    match_self = False
+    if ref_imgs:
+        if isinstance(ref_imgs, (str, Path)):
+            ref_names = parse_image_lists(ref_imgs)
+        elif isinstance(imgs, colls.Iterable):
+            ref_names = list(ref_imgs)
         else:
-            raise ValueError(f"Unknown type for reference image list: {ref_list}")
-    elif ref_features is not None:
-        names_ref = list_h5_names(ref_features)
+            raise ValueError(f"Bad ref image list type: {ref_imgs}")
+    elif ref_feats:
+        ref_names = list_h5_names(ref_feats)
     else:
-        self_matching = True
-        names_ref = names_q
+        match_self = True
+        ref_names = q_names
 
+    # Make all pairs
     pairs = []
-    for i, n1 in enumerate(names_q):
-        for j, n2 in enumerate(names_ref):
-            if self_matching and j <= i:
+    for i, img1 in enumerate(q_names):
+        for j, img2 in enumerate(ref_names):
+            if match_self and j <= i:
                 continue
-            pairs.append((n1, n2))
+            pairs.append((img1, img2))
 
-    # logger.info(f"Found {len(pairs)} pairs.")
-    with open(output, "w") as f:
-        f.write("\n".join(" ".join([i, j]) for i, j in pairs))
+    # Save pairs to file
+    with open(out_file, "w") as f:
+        f.write("\n".join(f"{i} {j}" for i, j in pairs))
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--image_list", type=Path)
-    parser.add_argument("--features", type=Path)
-    parser.add_argument("--ref_list", type=Path)
-    parser.add_argument("--ref_features", type=Path)
-    args = parser.parse_args()
-    main(**args.__dict__)
+# if __name__ == "__main__":
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("--out_file", required=True, type=Path)
+#     parser.add_argument("--imgs", type=Path)
+#     parser.add_argument("--feats", type=Path)
+#     parser.add_argument("--ref_imgs", type=Path)
+#     parser.add_argument("--ref_feats", type=Path)
+#     args = parser.parse_args()
+#     make_pairs(**args.__dict__)

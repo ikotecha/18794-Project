@@ -106,21 +106,21 @@ def extract_features(
         del out
     return feat_path
 
-def resize_img(img, size, method):
-    if method.startswith('cv2_'):
-        m = getattr(cv2, 'INTER_' + method[4:].upper())
-        h, w = img.shape[:2]
-        if m == cv2.INTER_AREA and (w < size[0] or h < size[1]):
-            m = cv2.INTER_LINEAR
-        new_img = cv2.resize(img, size, interpolation=m)
-    elif method.startswith('pil_'):
-        m = getattr(PIL.Image, method[4:].upper())
-        new_img = PIL.Image.fromarray(img.astype(np.uint8))
-        new_img = new_img.resize(size, resample=m)
-        new_img = np.asarray(new_img, dtype=img.dtype)
-    else:
-        raise ValueError(f"Bad resize method: {method}")
-    return new_img
+# def resize_img(img, size, method):
+#     if method.startswith('cv2_'):
+#         m = getattr(cv2, 'INTER_' + method[4:].upper())
+#         h, w = img.shape[:2]
+#         if m == cv2.INTER_AREA and (w < size[0] or h < size[1]):
+#             m = cv2.INTER_LINEAR
+#         new_img = cv2.resize(img, size, interpolation=m)
+#     elif method.startswith('pil_'):
+#         m = getattr(PIL.Image, method[4:].upper())
+#         new_img = PIL.Image.fromarray(img.astype(np.uint8))
+#         new_img = new_img.resize(size, resample=m)
+#         new_img = np.asarray(new_img, dtype=img.dtype)
+#     else:
+#         raise ValueError(f"Bad resize method: {method}")
+#     return new_img
 
 # class ImgDataset(torch.utils.data.Dataset):
 #     defaults = {
